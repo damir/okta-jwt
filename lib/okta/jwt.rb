@@ -16,11 +16,10 @@ module Okta
     end
   
     # configure the client
-    def configure!(issuer_url:, auth_server_id:, client_id:, public_key_ttl: 0, client_secret: nil, logger: Logger.new(IO::NULL))
+    def configure!(issuer_url:, auth_server_id:, client_id: nil, client_secret: nil, logger: Logger.new(IO::NULL))
       @issuer_url     = issuer_url
       @auth_server_id = auth_server_id
       @client_id      = client_id
-      @public_key_ttl = public_key_ttl
       @client_secret  = client_secret
       @logger         = logger
   
@@ -42,18 +41,18 @@ module Okta
   
     # validate the token
     def verify_token(token)
-      kid = JSON.parse(Base64.decode64(token.split('.').first))['kid']
-      jwk = JSON::JWK.new(get_jwk(kid))
+      jwk = JSON::JWK.new(get_jwk(token))
       JSON::JWT.decode(token, jwk.to_key)
     end
   
-    # extract public key from metadata's jwks_uri
-    def get_jwk(kid)
+    # extract public key from metadata's jwks_uri using kid
+    def get_jwk(token)
+      kid = JSON.parse(Base64.decode64(token.split('.').first))['kid']
       return JWKS_CACHE[kid] if JWKS_CACHE[kid] # cache hit
   
       logger.info("[Okta::Jwt] Fetching public key: kid => #{kid} ...")
       jwks_response = client.get do |req|
-        req.url get_metadata['jwks_uri']
+        req.url get_metadata(token)['jwks_uri']
       end
       jwk = JSON.parse(jwks_response.body)['keys'].find do |key|
         key.dig('kid') == kid
@@ -63,8 +62,10 @@ module Okta
       jwk.tap{JWKS_CACHE[kid] = jwk}
     end
   
-    # fetch metadata
-    def get_metadata
+    # fetch client metadata using cid/aud
+    def get_metadata(token)
+      payload = JSON.parse(Base64.decode64(token.split('.')[1]))
+      client_id = payload['cid'] || payload['aud'] # id_token has client_id value under aud key
       metadata_response = client.get do |req|
         req.url "/oauth2/#{auth_server_id}/.well-known/oauth-authorization-server?client_id=#{client_id}"
       end

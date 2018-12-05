@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    okta-jwt (0.1.0)
+    okta-jwt (0.2.0)
       faraday
       json-jwt
 

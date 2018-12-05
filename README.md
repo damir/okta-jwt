@@ -25,7 +25,7 @@ Configure the client:
 ```ruby
 Okta::Jwt.configure! issuer_url:     'https://organization.oktapreview.com,
                      auth_server_id: 'auth_server_id,
-                     client_id:      'client_id,
+                     client_id:      'client_id,        # optional, used to sign in users
                      client_secret:  'client_secret,    # optional, used to sign in users
                      logger:         Logger.new(STDOUT) # optional
 ```
