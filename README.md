@@ -25,9 +25,9 @@ Configure the client to sign in user (optional):
 ```ruby
 # client for resource owner password flow
 Okta::Jwt.configure_client!(
-  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>,
-  client_id: 'client_id,
-  client_secret: 'client_secret,
+  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
+  client_id: 'client_id',
+  client_secret: 'client_secret',
   logger: Logger.new(STDOUT) # optional
 )
 ```
@@ -48,8 +48,8 @@ Verify access token:
 
 ```ruby
 verified_access_token = Okta::Jwt.verify_token(access_token,
-  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>,
-  audience: 'http://localhost:3000,
+  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
+  audience: 'http://localhost:3000',
   client_id: 'client_id'
 )
 ```
