@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Damir Roso"]
   spec.email         = ["damir.roso@nih.gov"]
 
-  spec.summary       = "Okta JWT verifier"
-  spec.description   = "Okta JWT verifier"
+  spec.summary       = "Verify Okta JWT access tokens using cached JWKs"
+  spec.description   = "Verify Okta JWT access tokens using cached JWKs"
   spec.homepage      = "https://github.com/damir/okta-jwt"
   spec.license       = "MIT"
 
