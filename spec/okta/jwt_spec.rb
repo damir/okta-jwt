@@ -2,13 +2,13 @@ RSpec.describe Okta::Jwt do
 
   CLIENT = Okta::Jwt
 
-  CLIENT.configure! issuer_url:     ENV["OKTA_ISSUER_URL"],
-                    auth_server_id: ENV["OKTA_AUTH_SERVER_ID"],
-                    client_id:      ENV["OKTA_CLIENT_ID"],
-                    client_secret:  ENV["OKTA_CLIENT_SECRET"],
-                    logger:         Logger.new(STDOUT)
+  CLIENT.configure_client!  issuer_url:     ENV["OKTA_ISSUER_URL"],
+                            auth_server_id: ENV["OKTA_AUTH_SERVER_ID"],
+                            client_id:      ENV["OKTA_CLIENT_ID"],
+                            client_secret:  ENV["OKTA_CLIENT_SECRET"],
+                            logger:         Logger.new(STDOUT)
 
-  auth_response = Okta::Jwt.sign_in(username: 'test@example.org', password: 'Password123')
+  auth_response = Okta::Jwt.sign_in(username: 'test@example.org', password: 'Password123', scope: 'openid groups')
   parsed_auth_response = JSON.parse(auth_response.body)
 
   it "has a version number" do

@@ -20,20 +20,23 @@ Or install it yourself as:
 
 ## Usage
 
-Configure the client:
+Configure the client to sign in user (optional):
 
 ```ruby
-Okta::Jwt.configure! issuer_url:     'https://organization.oktapreview.com,
-                     auth_server_id: 'auth_server_id,
-                     client_id:      'client_id,        # optional, used to sign in users
-                     client_secret:  'client_secret,    # optional, used to sign in users
-                     logger:         Logger.new(STDOUT) # optional
+# client for resource owner password flow
+Okta::Jwt.configure_client!(
+	issuer_url:     'https://organization.oktapreview.com,
+	auth_server_id: 'auth_server_id,
+	client_id:      'client_id,
+	client_secret:  'client_secret,
+	slogger:         Logger.new(STDOUT) # optional
+)
 ```
 
-Sign in user to get tokens:
+Sign in user to get tokens (default scope is openid):
 
 ```ruby
-auth_response = Okta::Jwt.sign_in(username: 'user@example.org', password: 'password')
+auth_response = Okta::Jwt.sign_in(username: 'user@example.org', password: 'password', scope: 'openid my_scope')
 parsed_auth_response = JSON.parse(auth_response.body)
 ```
 
@@ -43,6 +46,7 @@ Verify tokens:
 verified_id_token = Okta::Jwt.verify_token(parsed_auth_response['id_token'])
 verified_access_token = Okta::Jwt.verify_token(parsed_auth_response['access_token'])
 ```
+NOTE: tokens are validated using data from header and payload: kid, iss and cid/aud. If you are just verifying the tokens there is no need to store anything at the client side. 
 
 ## Development
 
