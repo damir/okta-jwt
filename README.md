@@ -27,9 +27,7 @@ Configure the client to sign in user (optional):
 Okta::Jwt.configure_client!(
   issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
   client_id: 'client_id',
-  client_secret: 'client_secret',
-  logger: Logger.new(STDOUT) # optional
-)
+  client_secret: 'client_secret')
 ```
 
 Sign in user to get access token (default scope is openid):
@@ -41,18 +39,20 @@ auth_response = Okta::Jwt.sign_in(
   scope: 'openid my_scope'
 )
 parsed_auth_response = JSON.parse(auth_response.body)
-access_token = parsed_auth_response['id_token']
+access_token = parsed_auth_response['access_token']
 ```
 
-Verify access token:
+Verify access token (signature + claims):
 
 ```ruby
+Okta::Jwt.logger = Logger.new(STDOUT) # set optional logger
 verified_access_token = Okta::Jwt.verify_token(access_token,
   issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
-  audience: 'http://localhost:3000',
+  audience: 'development',
   client_id: 'client_id'
 )
 ```
+NOTE: You can pass multiple client ids as an array if needed.
 
 ## Development
 

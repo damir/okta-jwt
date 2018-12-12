@@ -14,26 +14,20 @@ module Okta
     JWKS_CACHE  = {}
   
     class << self
-      attr_accessor :issuer, :auth_server_id, :client_id, :client_secret, :public_key_ttl, :client, :logger
+      attr_accessor :issuer, :auth_server_id, :client_id, :client_secret, :logger
     end
   
     # configure the client for signing in
-    def configure_client!(issuer:, client_id:, client_secret:, logger: Logger.new(IO::NULL))
+    def configure_client!(issuer:, client_id:, client_secret:)
       @issuer         = issuer
       @client_id      = client_id
       @client_secret  = client_secret
-      @logger         = logger
       @auth_server_id = issuer.split('/').last
-
-      @client = Faraday.new(url: issuer) do |f|
-        f.use Faraday::Adapter::NetHttp
-        f.headers['Accept'] = 'application/json'
-      end
     end
   
     # sign in user to get tokens
     def sign_in(username:, password:, scope: 'openid')
-      client.post do |req|
+      client(issuer).post do |req|
         req.url "/oauth2/#{auth_server_id}/v1/token"
         req.headers['Content-Type']   = 'application/x-www-form-urlencoded'
         req.headers['Authorization']  = 'Basic: ' + Base64.strict_encode64("#{client_id}:#{client_secret}")
@@ -48,7 +42,7 @@ module Okta
       # validate claims
       raise InvalidToken.new('Invalid issuer')    if payload['iss'] != issuer
       raise InvalidToken.new('Invalid audience')  if payload['aud'] != audience
-      raise InvalidToken.new('Invalid client')    if payload['cid'] != client_id
+      raise InvalidToken.new('Invalid client')    if !Array(client_id).include?(payload['cid'])
       raise InvalidToken.new('Token is expired')  if payload['exp'].to_i <= Time.now.to_i
 
       # validate signature
@@ -58,12 +52,14 @@ module Okta
   
     # extract public key from metadata's jwks_uri using kid
     def get_jwk(header, payload)
-
       kid = header['kid']
-      return JWKS_CACHE[kid] if JWKS_CACHE[kid] # cache hit
+
+      # cache hit
+      return JWKS_CACHE[kid] if JWKS_CACHE[kid]
   
-      logger.info("[Okta::Jwt] Fetching public key: kid => #{kid} ...")
-      jwks_response = client.get do |req|
+      # fetch jwk
+      logger.info("[Okta::Jwt] Fetching public key: kid => #{kid} ...") if logger
+      jwks_response = client(payload['iss']).get do |req|
         req.url get_metadata(payload)['jwks_uri']
       end
       jwk = JSON.parse(jwks_response.body)['keys'].find do |key|
@@ -76,18 +72,20 @@ module Okta
   
     # fetch client metadata using cid/aud
     def get_metadata(payload)
-      auth_server_id  = payload['iss'].split('/').last    # iss: "https://<org>.oktapreview.com/oauth2/<auth_server_id>"
-      client_id       = payload['cid']
-
-      client = Faraday.new(url: payload['iss']) do |f|
-        f.use Faraday::Adapter::NetHttp
-        f.headers['Accept'] = 'application/json'
-      end
-
-      metadata_response = client.get do |req|
+      auth_server_id    = payload['iss'].split('/').last # iss: "https://<org>.oktapreview.com/oauth2/<auth_server_id>"
+      client_id         = payload['cid']
+      metadata_response = client(payload['iss']).get do |req|
         req.url "/oauth2/#{auth_server_id}/.well-known/oauth-authorization-server?client_id=#{client_id}"
       end
       JSON.parse(metadata_response.body)
+    end
+
+    # init client
+    def client(issuer)
+      Faraday.new(url: issuer) do |f|
+        f.use Faraday::Adapter::NetHttp
+        f.headers['Accept'] = 'application/json'
+      end
     end
   end
 end
