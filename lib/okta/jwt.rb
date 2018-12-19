@@ -14,24 +14,32 @@ module Okta
     JWKS_CACHE  = {}
   
     class << self
-      attr_accessor :issuer, :auth_server_id, :client_id, :client_secret, :logger
+      attr_accessor :issuer, :auth_server_id, :logger
     end
   
     # configure the client for signing in
-    def configure_client!(issuer:, client_id:, client_secret:)
+    def configure!(issuer:, logger: nil)
       @issuer         = issuer
-      @client_id      = client_id
-      @client_secret  = client_secret
       @auth_server_id = issuer.split('/').last
     end
   
     # sign in user to get tokens
-    def sign_in(username:, password:, scope: 'openid')
+    def sign_in_user(username:, password:, client_id:, client_secret:, scope: 'openid')
       client(issuer).post do |req|
         req.url "/oauth2/#{auth_server_id}/v1/token"
         req.headers['Content-Type']   = 'application/x-www-form-urlencoded'
         req.headers['Authorization']  = 'Basic: ' + Base64.strict_encode64("#{client_id}:#{client_secret}")
         req.body = URI.encode_www_form username: username, password: password, scope: scope, grant_type: 'password'
+      end
+    end
+
+    # sign in client to get access_token
+    def sign_in_client(client_id:, client_secret:, scope:)
+      client(issuer).post do |req|
+        req.url "/oauth2/#{auth_server_id}/v1/token"
+        req.headers['Content-Type']   = 'application/x-www-form-urlencoded'
+        req.headers['Authorization']  = 'Basic: ' + Base64.strict_encode64("#{client_id}:#{client_secret}")
+        req.body = URI.encode_www_form scope: scope, grant_type: 'client_credentials'
       end
     end
   

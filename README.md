@@ -19,34 +19,59 @@ Or install it yourself as:
     $ gem install okta-jwt
 
 ## Usage
-
-Configure the client to sign in user (optional):
+Require the library:
 
 ```ruby
-# client for resource owner password flow
-Okta::Jwt.configure_client!(
-  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
-  client_id: 'client_id',
-  client_secret: 'client_secret')
+require 'okta/jwt'
 ```
+
+### Getting the tokens
+
+Configuration:
+
+```ruby
+Okta::Jwt.configure!(
+  issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>'
+)
+```
+NOTE: this step is optional, you don't need it for token verification.
+
+#### Resource owner password flow
 
 Sign in user to get access token (default scope is openid):
 
 ```ruby
-auth_response = Okta::Jwt.sign_in(
+auth_response = Okta::Jwt.sign_in_user(
   username: 'user@example.org',
   password: 'password',
+  client_id: 'client_id',
+  client_secret: 'client_secret',
   scope: 'openid my_scope'
 )
-parsed_auth_response = JSON.parse(auth_response.body)
-access_token = parsed_auth_response['access_token']
+access_token = JSON.parse(auth_response.body)['access_token']
 ```
 
+#### Client credentials flow
+
+Sign in client to get access token (provide at least one custom scope):
+
+```ruby
+auth_response = Okta::Jwt.sign_in_client(
+  client_id: 'client_id',
+  client_secret: 'client_secret',
+  scope: 'my_scope'
+)
+access_token = JSON.parse(auth_response.body)['access_token']
+```
+
+### Verify the token
+  
 Verify access token (signature + claims):
 
 ```ruby
 Okta::Jwt.logger = Logger.new(STDOUT) # set optional logger
-verified_access_token = Okta::Jwt.verify_token(access_token,
+verified_access_token = Okta::Jwt.verify_token(
+  access_token,
   issuer: 'https://<org>.oktapreview.com/oauth2<auth_server_id>',
   audience: 'development',
   client_id: 'client_id'

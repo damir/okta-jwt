@@ -2,18 +2,21 @@ RSpec.describe Okta::Jwt do
 
   issuer        = ENV["OKTA_ISSUER"]
   audience      = ENV["OKTA_AUDIENCE"]
-  client_ids    = ENV["OKTA_CLIENT_IDS"].split(',') # [resource_owner_token, implicit_token]
+  client_ids    = ENV["OKTA_CLIENT_IDS"].split(',') # [resource_owner_token, implicit_token, ...]
   client_secret = ENV["OKTA_CLIENT_SECRET"]
 
-  # client to sign in users with resource owner flow
-  Okta::Jwt.configure_client! issuer:         issuer,
-                              client_id:      client_ids.first,
-                              client_secret:  client_secret
+  Okta::Jwt.configure! issuer: issuer, logger: Logger.new(STDOUT)
 
-  auth_response         = Okta::Jwt.sign_in(username: 'test@example.org', password: 'Password123', scope: 'openid profile')
+  auth_response = Okta::Jwt.sign_in_user(
+    username: 'test@example.org',
+    password: 'Password123',
+    client_id: client_ids.first,
+    client_secret: client_secret,
+    scope: 'openid profile')
+
   parsed_auth_response  = JSON.parse(auth_response.body)
   access_token          = parsed_auth_response['access_token']
-  
+
   it "has a version number" do
     expect(Okta::Jwt::VERSION).not_to be nil
   end
